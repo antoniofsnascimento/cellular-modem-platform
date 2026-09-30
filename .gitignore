@@ -1,0 +1,17 @@
+# Compiled class files
+target/
+*.class
+*.jar
+*.war
+
+# macOS specific
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Virtual Ports
+/tmp/ttyA
+/tmp/ttyB
