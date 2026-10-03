@@ -16,7 +16,7 @@
         <!-- Library for communication with virtual serial ports (socat) -->
         <dependency>
             <groupId>com.fazecast</groupId>
-            <artifactId>jSerialCom</artifactId>
+            <artifactId>jSerialComm</artifactId>
             <version>2.11.0</version>
         </dependency>
     </dependencies>
