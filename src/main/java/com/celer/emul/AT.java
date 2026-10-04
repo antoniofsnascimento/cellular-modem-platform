@@ -76,7 +76,7 @@ public final class AT extends Thread{
    private AT(){ /* NOOP */ }
 
    public static final void main(String[] args){
-      port = ww = maxcon = 0;
+      port = 2001; ww = maxcon = 0; // for tcp: 127.0.0.1:2001
       if(args.length > 0)
          port = s2i(args[0]);
       if(port > 0){
