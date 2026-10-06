@@ -73,6 +73,33 @@ public final class AT extends Thread{
       /* S38 */ 20  // delay before force disconnect
    };
 
+   public enum ModemState {
+      BOOT,
+      PIN_REQUIRED,
+      REGISTRATION,
+      IDLE //SMS_STACK
+   }
+
+   static ModemState modemState = ModemState.BOOT;
+   static long stateStartTime = System.currentTimeMillis();
+
+   static void updateModemState(){
+      long elapsed = System.currentTimeMillis() - stateStartTime;
+      if (modemState == ModemState.BOOT && elapsed > 2000){
+         modemState = ModemState.PIN_REQUIRED;
+      } else if (modemState == ModemState.REGISTRATION && elapsed > 5000) {
+         modemState = ModemState.IDLE;
+      }
+
+   }
+static void applyLatency(long minMs, long maxMs){
+      try{
+         long delay = minMs + (long) (Math.random() * (maxMs-minMs + 1));
+         Thread.sleep(delay);
+      } catch (InterruptedException e) {
+         Thread.currentThread().interrupt();
+      }
+}
    private AT(){ /* NOOP */ }
 
    public static final void main(String[] args){
@@ -481,13 +508,17 @@ AT_LOOP: while((line = in.readLine()) != null){
                   }
                   mode = (byte)(jj & 0x0F);
                   break;
-               case 0x2B637371: // AT+CSQ (get signal strength)
-                  if(mm != 0x00000000){
-                     err = 4;
+                  case 0x2B637371: // AT+CSQ (get signal strength)
+                     if(mm != 0x00000000){
+                        err = 4;
+                        break;
+                     }
+                     if (modemState == ModemState.IDLE) {
+                        rs = "+CSQ: 21,0"; // Sinal forte
+                     } else {
+                        rs = "+CSQ: 99,99"; // Sinal indetetável / offline
+                     }
                      break;
-                  }
-                  rs = "+CSQ: 21,0"; // RSSI 21 = -71 dBm, BER N/A
-                  break;
                case 0x73713D3F: // AT+CSQ=? (test signal strength availability)
                   if(mm != 0x00002B63){
                      err = 4;
@@ -593,13 +624,25 @@ AT_LOOP: while((line = in.readLine()) != null){
                      err = 4;
                      break;
                   }
+                  if (modemState == ModemState.PIN_REQUIRED) {
+                     modemState = ModemState.REGISTRATION; // Avança de estado
+                     stateStartTime = System.currentTimeMillis();
+                  } else if (modemState != ModemState.BOOT) {
+                     err = 4; // Error: It was already unlocked
+                  }
                   break;
                case 0x70696E3F: // AT+CPIN?
                   if(mm != 0x00002B63){
                      err = 4;
                      break;
                   }
-                  rs = "+CPIN: \"READY\"";
+                  if (modemState == ModemState.BOOT) {
+                     err = 4; // Not ready
+                  } else if (modemState == ModemState.PIN_REQUIRED) {
+                     rs = "+CPIN: SIM PIN";
+                  } else {
+                     rs = "+CPIN: READY";
+                  }
                   break;
                case 0x696E3D3F: // AT+CPIN=?
                   if(mm != 0x002B6370){
@@ -666,7 +709,10 @@ AT_LOOP: while((line = in.readLine()) != null){
                      err = 4;
                      break;
                   }
-                  rs = sb.append("+CREG: ").append((char)(0x30 + creg_nn)).append(',').append('1').toString();
+                  int regStat = 0;
+                  if (modemState == ModemState.REGISTRATION) regStat = 2; // À procura de rede
+                  else if (modemState == ModemState.IDLE) regStat = 1; // Registado
+                  rs = sb.append("+CREG: ").append((char)(0x30 + creg_nn)).append(',').append(regStat).toString();
                   break;
                case 0x2B2B6174: // +++AT (TIES)
                   if(mm != 0x0000002B){
@@ -680,6 +726,16 @@ AT_LOOP: while((line = in.readLine()) != null){
                default:
                   err = 4;
                }
+
+               //Latency Simulation
+               updateModemState();
+               long minLat = 20, maxLat = 50;
+               if (jj == 0x2B637371) { // AT+CSQ
+                  minLat = 10; maxLat = 10;
+               } else if (jj == 0x6D67733D) { // AT+CMGS=
+                  minLat = 200; maxLat = 800;
+               }
+               applyLatency(minLat, maxLat);
 
                // Echo the AT response
                if(rs != null){
