@@ -100,6 +100,32 @@ static void applyLatency(long minMs, long maxMs){
          Thread.currentThread().interrupt();
       }
 }
+
+public static class SmsRecord{
+      public int index;
+      public String status; // "REC UNREAD", "REC READ", "STO SENT"
+      public String number;
+      public String timestamp;
+      public String text;
+
+      public SmsRecord(int index, String status, String number, String timestamp, String text){
+      this.index = index;
+      this.status = status;
+      this.number = number;
+      this.timestamp = timestamp;
+      this.text = text;
+      }
+   }
+
+   static final List<AT.SmsRecord> smsRecords = new ArrayList<AT.SmsRecord>();
+   static int nextSmsIndex = 1;
+   static String smsAddress = "+351910000000";
+
+   static void logServer(String tag, String msg) {
+      String time = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
+      System.out.println(String.format("[%s] [%-7s] %s", time, tag, msg));
+   }
+
    private AT(){ /* NOOP */ }
 
    public static final void main(String[] args){
