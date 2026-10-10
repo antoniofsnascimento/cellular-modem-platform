@@ -77,7 +77,7 @@ public final class AT extends Thread{
       BOOT,
       PIN_REQUIRED,
       REGISTRATION,
-      IDLE //SMS_STACK
+      IDLE
    }
 
    static ModemState modemState = ModemState.BOOT;
@@ -90,36 +90,45 @@ public final class AT extends Thread{
       } else if (modemState == ModemState.REGISTRATION && elapsed > 5000) {
          modemState = ModemState.IDLE;
       }
-
    }
-static void applyLatency(long minMs, long maxMs){
+
+   static void applyLatency(long minMs, long maxMs){
       try{
-         long delay = minMs + (long) (Math.random() * (maxMs-minMs + 1));
+         long delay = minMs + (long) (Math.random() * (maxMs - minMs + 1));
          Thread.sleep(delay);
       } catch (InterruptedException e) {
          Thread.currentThread().interrupt();
       }
-}
+   }
 
-public static class SmsRecord{
-      public int index;
-      public String status; // "REC UNREAD", "REC READ", "STO SENT"
-      public String number;
-      public String timestamp;
-      public String text;
+   public static final class SmsRecord {
+      public final int index;
+      public String status;
+      public final String number;
+      public final String timestamp;
+      public final String text;
 
-      public SmsRecord(int index, String status, String number, String timestamp, String text){
-      this.index = index;
-      this.status = status;
-      this.number = number;
-      this.timestamp = timestamp;
-      this.text = text;
+      private SmsRecord(int index, String status, String number, String text) {
+         this.index = index;
+         this.status = status;
+         this.number = number;
+         this.timestamp = java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yy/MM/dd,HH:mm:ss+00"));
+         this.text = text;
+      }
+
+      public static SmsRecord incoming(int index, String sender, String text) {
+         return new SmsRecord(index, "REC UNREAD", sender, text);
+      }
+
+      public static SmsRecord sent(int index, String recipient, String text) {
+         return new SmsRecord(index, "STO SENT", recipient, text);
       }
    }
 
-   static final List<AT.SmsRecord> smsRecords = new ArrayList<AT.SmsRecord>();
+   static final List<SmsRecord> smsStore = new ArrayList<SmsRecord>();
    static int nextSmsIndex = 1;
-   static String smsAddress = "+351910000000";
+   static String smscAddress = "+351910000000";
 
    static void logServer(String tag, String msg) {
       String time = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
@@ -169,6 +178,111 @@ public static class SmsRecord{
             out.print(sb.append("\r\nCtrl+C to exit\r\n").toString());
          }
 AT_LOOP: while((line = in.readLine()) != null){
+
+            line = line.trim();
+            if(line.isEmpty()) continue;
+            logServer("RX", line + "  (FSM: " + modemState + ")");
+
+            String upper = line.toUpperCase();
+            if (upper.startsWith("AT+CSCA?") || upper.startsWith("AT+CSCA=") ||
+                    upper.startsWith("AT+CMGL") || upper.startsWith("AT+CMGR=") ||
+                    upper.startsWith("AT+CMGD=") || upper.startsWith("AT+CUSD=") ||
+                    upper.startsWith("AT+INJECT=")) {
+
+               updateModemState();
+               if (modemState != ModemState.IDLE) {
+                  logServer("TX", "+CME ERROR: 10");
+                  out.print("\r\n+CME ERROR: 10\r\n");
+                  continue AT_LOOP;
+               }
+
+               if (upper.equals("AT+CSCA?")) {
+                  applyLatency(20, 50);
+                  String resp = "+CSCA: \"" + smscAddress + "\",145";
+                  logServer("TX", resp + " -> OK");
+                  out.print("\r\n" + resp + "\r\n\r\nOK\r\n");
+                  continue AT_LOOP;
+               } else if (upper.startsWith("AT+CSCA=")) {
+                  applyLatency(20, 50);
+                  String val = line.substring(8).replace("\"", "").trim();
+                  if (!val.isEmpty()) smscAddress = val.split(",")[0];
+                  logServer("TX", "OK (SMSC: " + smscAddress + ")");
+                  out.print("\r\nOK\r\n");
+                  continue AT_LOOP;
+               } else if (upper.startsWith("AT+CMGL")) {
+                  applyLatency(50, 150);
+                  StringBuilder listResp = new StringBuilder();
+                  synchronized (smsStore) {
+                     for (SmsRecord sms : smsStore) {
+                        listResp.append("\r\n+CMGL: ").append(sms.index).append(",\"")
+                                .append(sms.status).append("\",\"")
+                                .append(sms.number).append("\",,\"")
+                                .append(sms.timestamp).append("\"\r\n")
+                                .append(sms.text);
+                     }
+                  }
+                  logServer("TX", listResp.toString() + "\r\nOK");
+                  out.print(listResp.toString() + "\r\n\r\nOK\r\n");
+                  continue AT_LOOP;
+               } else if (upper.startsWith("AT+CMGR=")) {
+                  applyLatency(30, 80);
+                  int idx = s2i(line.substring(8).trim());
+                  SmsRecord found = null;
+                  synchronized (smsStore) {
+                     for (SmsRecord s : smsStore) {
+                        if (s.index == idx) {
+                           found = s;
+                           if ("REC UNREAD".equals(s.status)) {
+                              s.status = "REC READ";
+                           }
+                           break;
+                        }
+                     }
+                  }
+                  if (found != null) {
+                     String readResp = "\r\n+CMGR: \"" + found.status + "\",\"" + found.number + "\",,\"" + found.timestamp + "\"\r\n" + found.text + "\r\n\r\nOK\r\n";
+                     logServer("TX", "+CMGR: " + found.index + " (" + found.status + ") -> OK");
+                     out.print(readResp);
+                  } else {
+                     logServer("TX", "+CMS ERROR: 321");
+                     out.print("\r\n+CMS ERROR: 321\r\n");
+                  }
+                  continue AT_LOOP;
+               } else if (upper.startsWith("AT+CMGD=")) {
+                  applyLatency(30, 80);
+                  int idx = s2i(line.substring(8).trim());
+                  boolean removed = false;
+                  synchronized (smsStore) {
+                     removed = smsStore.removeIf(s -> s.index == idx);
+                  }
+                  if (removed) {
+                     logServer("TX", "OK (Deleted SMS #" + idx + ")");
+                     out.print("\r\nOK\r\n");
+                  } else {
+                     logServer("TX", "+CMS ERROR: 321");
+                     out.print("\r\n+CMS ERROR: 321\r\n");
+                  }
+                  continue AT_LOOP;
+               } else if (upper.startsWith("AT+CUSD=")) {
+                  applyLatency(500, 2000);
+                  String ussdResp = "+CUSD: 0,\"Saldo: 5.40 EUR (Validade: 31/12/2026)\",15";
+                  logServer("TX", ussdResp + " -> OK");
+                  out.print("\r\n" + ussdResp + "\r\n\r\nOK\r\n");
+                  continue AT_LOOP;
+               } else if (upper.startsWith("AT+INJECT=")) {
+                  String[] parts = line.substring(10).replace("\"", "").split(",", 2);
+                  String from = parts.length > 0 ? parts[0].trim() : "+351912345678";
+                  String msg = parts.length > 1 ? parts[1].trim() : "Test message";
+                  int newIdx;
+                  synchronized (smsStore) {
+                     newIdx = nextSmsIndex++;
+                     smsStore.add(SmsRecord.incoming(newIdx, from, msg));
+                  }
+                  logServer("URC", "Incoming SMS stored at index " + newIdx);
+                  out.print("\r\n+CMTI: \"SM\"," + newIdx + "\r\n");
+                  continue AT_LOOP;
+               }
+            }
 
             // Each line can contain a single AT command or multiple concatenated AT commands
             ii = kk = 0;
@@ -438,10 +552,15 @@ AT_LOOP: while((line = in.readLine()) != null){
                      err = 2;
                      break;
                   }
+                  String sentBody = sb.toString();
                   sb.setLength(0);
                   if((mr = (mr + 1) & 0xFF) == 0)
                      mr = 1;
                   rs = sb.append("+CMGS: ").append(mr).toString();
+                  synchronized (smsStore) {
+                     smsStore.add(SmsRecord.sent(nextSmsIndex++, String.valueOf(p1), sentBody));
+                  }
+                  logServer("STORE", "Sent SMS stored (MR: " + mr + ")");
                   break;
                case 0x00000078: // ATX[0] (Smartmodem result codes)
                   atx = 0;
@@ -753,15 +872,16 @@ AT_LOOP: while((line = in.readLine()) != null){
                   err = 4;
                }
 
-               //Latency Simulation
                updateModemState();
                long minLat = 20, maxLat = 50;
-               if (jj == 0x2B637371) { // AT+CSQ
+               if (jj == 0x2B637371) {
                   minLat = 10; maxLat = 10;
-               } else if (jj == 0x6D67733D) { // AT+CMGS=
+               } else if (jj == 0x6D67733D) {
                   minLat = 200; maxLat = 800;
                }
                applyLatency(minLat, maxLat);
+               logServer("LATENCY", minLat + "-" + maxLat + "ms | FSM: " + modemState);
+               if(rs != null) logServer("TX", rs);
 
                // Echo the AT response
                if(rs != null){
