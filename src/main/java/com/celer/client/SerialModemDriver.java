@@ -16,6 +16,11 @@ public final class SerialModemDriver implements AutoCloseable {
     }
 
     public void open() {
+        java.io.File portFile = new java.io.File(portPath);
+        if (!portFile.exists()) {
+            throw new IllegalStateException("A porta virtual '" + portPath + "' não foi encontrada no sistema. Certifica-te de que o 'socat' está ativo no Terminal 2.");
+        }
+
         serialPort = SerialPort.getCommPort(portPath);
         serialPort.setBaudRate(115200);
         serialPort.setNumDataBits(8);

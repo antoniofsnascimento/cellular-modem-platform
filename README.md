@@ -165,7 +165,11 @@ nc 127.0.0.1 2001
 #### Option B: Virtual Serial Port Bridge (`socat`)
 In one terminal, spawn the virtual serial bridge:
 ```bash
+# Execução simples (termina quando o cliente fecha):
 socat pty,raw,echo=0,link=/tmp/ttyB tcp:127.0.0.1:2001
+
+# OU em loop contínuo (recomendado para usar a GUI e múltiplos testes sucessivos):
+while true; do socat pty,raw,echo=0,link=/tmp/ttyB tcp:127.0.0.1:2001; sleep 1; done
 ```
 The client application or serial terminal connects directly to `/tmp/ttyB`.
 
