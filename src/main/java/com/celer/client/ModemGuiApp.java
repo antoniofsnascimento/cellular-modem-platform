@@ -147,9 +147,9 @@ public final class ModemGuiApp extends JFrame {
 
         JPanel pSmsCtrl = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         JButton btnListSms = new JButton("Listar Mensagens");
-        JButton btnClearSms = new JButton("Limpar SIM (CMGD=1)");
+        JButton btnClearSms = new JButton("Limpar SIM (CMGD=1,4)");
         btnListSms.addActionListener(e -> executeAsync("AT+CMGL=\"ALL\""));
-        btnClearSms.addActionListener(e -> executeAsync("AT+CMGD=1"));
+        btnClearSms.addActionListener(e -> executeAsync("AT+CMGD=1,4"));
         pSmsCtrl.add(btnListSms);
         pSmsCtrl.add(btnClearSms);
         panel.add(pSmsCtrl);
@@ -291,14 +291,24 @@ public final class ModemGuiApp extends JFrame {
         String voter = votePhoneField.getText().trim();
         String choice = (String) voteChoiceBox.getSelectedItem();
         worker.submit(() -> {
-            executeAndInspect("AT+INJECT=\"" + voter + "\",\"" + choice + "\"");
+            CommandResult injectRes = executeAndInspect("AT+INJECT=\"" + voter + "\",\"" + choice + "\"");
+            int slotIndex = 1;
+            if (injectRes.response().contains("+CMTI:")) {
+                try {
+                    String sub = injectRes.response().substring(injectRes.response().indexOf("+CMTI:"));
+                    String[] parts = sub.split(",");
+                    if (parts.length > 1) {
+                        slotIndex = Integer.parseInt(parts[1].replaceAll("[^0-9]", ""));
+                    }
+                } catch (Exception ignored) {}
+            }
             executeAndInspect("AT+CMGL=\"ALL\"");
-            executeAndInspect("AT+CMGR=1");
+            executeAndInspect("AT+CMGR=" + slotIndex);
 
             String decision = votingService.processVote(voter, choice);
             logInfo("VAS Decisão de Voto [" + voter + "]: " + decision);
 
-            executeAndInspect("AT+CMGD=1");
+            executeAndInspect("AT+CMGD=" + slotIndex);
 
             CommandResult smsRes = retryPolicy.execute(() -> driver.sendSms(voter, decision));
             logInfo("Confirmação SMS enviada: " + smsRes.success() + " (" + smsRes.latencyMs() + "ms)");

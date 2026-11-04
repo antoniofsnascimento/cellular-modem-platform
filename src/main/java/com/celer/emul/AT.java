@@ -256,13 +256,19 @@ AT_LOOP: while((line = in.readLine()) != null){
                   continue AT_LOOP;
                } else if (upper.startsWith("AT+CMGD=")) {
                   applyLatency(30, 80);
-                  int idx = s2i(line.substring(8).trim());
+                  String param = line.substring(8).trim();
                   boolean removed = false;
                   synchronized (smsStore) {
-                     removed = smsStore.removeIf(s -> s.index == idx);
+                     if (param.endsWith(",4") || "ALL".equalsIgnoreCase(param)) {
+                        removed = !smsStore.isEmpty();
+                        smsStore.clear();
+                     } else {
+                        int idx = s2i(param.split(",")[0].trim());
+                        removed = smsStore.removeIf(s -> s.index == idx);
+                     }
                   }
                   if (removed) {
-                     logServer("TX", "OK (Deleted SMS #" + idx + ")");
+                     logServer("TX", "OK (Deleted SMS: " + param + ")");
                      out.print("\r\nOK\r\n");
                   } else {
                      logServer("TX", "+CMS ERROR: 321");
