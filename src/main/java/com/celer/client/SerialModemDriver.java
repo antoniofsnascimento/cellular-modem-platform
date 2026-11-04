@@ -21,13 +21,20 @@ public final class SerialModemDriver implements AutoCloseable {
         serialPort.setNumDataBits(8);
         serialPort.setNumStopBits(SerialPort.ONE_STOP_BIT);
         serialPort.setParity(SerialPort.NO_PARITY);
-        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 3000, 0);
+        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 100, 0);
 
         if (!serialPort.openPort()) {
             throw new IllegalStateException("Failed to open virtual port: " + portPath);
         }
         inputStream = serialPort.getInputStream();
         outputStream = serialPort.getOutputStream();
+
+        // Flush any residual bytes left in the buffer from previous sessions
+        try {
+            while (inputStream.available() > 0) {
+                inputStream.read();
+            }
+        } catch (Exception ignored) {}
     }
 
     public CommandResult execute(String command) {
@@ -72,10 +79,10 @@ public final class SerialModemDriver implements AutoCloseable {
         int character;
         long deadline = System.currentTimeMillis() + 3000;
         while (System.currentTimeMillis() < deadline) {
-            if (inputStream.available() > 0) {
+            try {
                 character = inputStream.read();
                 if (character == '>') return;
-            }
+            } catch (Exception ignored) {}
             Thread.sleep(10);
         }
         throw new IllegalStateException("Timeout waiting for '>' prompt");
@@ -87,17 +94,18 @@ public final class SerialModemDriver implements AutoCloseable {
         long deadline = System.currentTimeMillis() + 5000;
 
         while (System.currentTimeMillis() < deadline) {
-            if (inputStream.available() > 0) {
-                int readBytes = inputStream.read(buffer);
-                if (readBytes > 0) {
-                    responseBuilder.append(new String(buffer, 0, readBytes, StandardCharsets.UTF_8));
-                    String current = responseBuilder.toString();
-                    if (current.contains("OK\r\n") || current.contains("ERROR\r\n")) {
-                        break;
-                    }
+            int readBytes = 0;
+            try {
+                readBytes = inputStream.read(buffer);
+            } catch (Exception ignored) {}
+            if (readBytes > 0) {
+                responseBuilder.append(new String(buffer, 0, readBytes, StandardCharsets.UTF_8));
+                String current = responseBuilder.toString();
+                if (current.contains("OK\r") || current.contains("OK\n") || current.contains("ERROR")) {
+                    break;
                 }
             } else {
-                Thread.sleep(20);
+                Thread.sleep(10);
             }
         }
         return responseBuilder.toString().trim();

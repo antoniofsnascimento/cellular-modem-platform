@@ -32,7 +32,7 @@ public final class TelemetryCollector {
 
     public String generateSummary(VotingService votingService, double lastBalance) {
         return String.format(
-            "=== TELEMETRY SUMMARY ===\n" +
+            " TELEMETRY SUMMARY \n" +
             "Total Commands Executed: %d\n" +
             "Avg Command Latency:     %.2f ms\n" +
             "Max Command Latency:     %d ms\n" +
@@ -40,7 +40,7 @@ public final class TelemetryCollector {
             "Total Votes Received:    %d\n" +
             "Voting Breakdown:        %s\n" +
             "Current Modem Balance:   %.2f EUR\n" +
-            "=========================",
+            "--------------------------------------",
             records.size(),
             getAverageLatencyMs(),
             getMaxLatencyMs(),

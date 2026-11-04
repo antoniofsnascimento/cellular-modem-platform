@@ -187,7 +187,7 @@ AT_LOOP: while((line = in.readLine()) != null){
             if (upper.startsWith("AT+CSCA?") || upper.startsWith("AT+CSCA=") ||
                     upper.startsWith("AT+CMGL") || upper.startsWith("AT+CMGR=") ||
                     upper.startsWith("AT+CMGD=") || upper.startsWith("AT+CUSD=") ||
-                    upper.startsWith("AT+INJECT=")) {
+                    upper.startsWith("AT+COPS?") || upper.startsWith("AT+INJECT=")) {
 
                updateModemState();
                if (modemState != ModemState.IDLE) {
@@ -196,7 +196,13 @@ AT_LOOP: while((line = in.readLine()) != null){
                   continue AT_LOOP;
                }
 
-               if (upper.equals("AT+CSCA?")) {
+               if (upper.startsWith("AT+COPS?")) {
+                  applyLatency(20, 50);
+                  String resp = (modemState == ModemState.IDLE) ? "+COPS: 0,0,\"UTAD Telecom\",7" : "+COPS: 0";
+                  logServer("TX", resp + " -> OK");
+                  out.print("\r\n" + resp + "\r\n\r\nOK\r\n");
+                  continue AT_LOOP;
+               } else if (upper.equals("AT+CSCA?")) {
                   applyLatency(20, 50);
                   String resp = "+CSCA: \"" + smscAddress + "\",145";
                   logServer("TX", resp + " -> OK");
@@ -279,7 +285,7 @@ AT_LOOP: while((line = in.readLine()) != null){
                      smsStore.add(SmsRecord.incoming(newIdx, from, msg));
                   }
                   logServer("URC", "Incoming SMS stored at index " + newIdx);
-                  out.print("\r\n+CMTI: \"SM\"," + newIdx + "\r\n");
+                  out.print("\r\n+CMTI: \"SM\"," + newIdx + "\r\n\r\nOK\r\n");
                   continue AT_LOOP;
                }
             }
