@@ -11,14 +11,15 @@ The objective of this platform is to emulate the complete lifecycle of a physica
 ### System Topology
 
 ```
-┌─────────────────────────┐          Virtual Serial Port          ┌─────────────────────────┐
-│   Client Application    │ ◄───►  /tmp/ttyB (PTY) or Netcat ───► │       AT Emulator       │
-│ (jSerialComm / Console) │                 │                     │      (CelerSMS Fork)    │
-└─────────────────────────┘                 │                     └────────────┬────────────┘
-                                            ▼                                  │
-                                     socat PTY-TCP Bridge                      ▼
-                                 (socat ... tcp:127.0.0.1:2001)       Server Telemetry Console
-                                                                      ([RX], [FSM], [LATENCY], [TX])
+┌─────────────────────────────────┐
+│       Client Applications       │          Virtual Serial Port          ┌─────────────────────────┐
+│ ┌─────────────┐ ┌─────────────┐ │ ◄───►  /tmp/ttyB (PTY) or Netcat ───► │       AT Emulator       │
+│ │  ClientApp  │ │ ModemGuiApp │ │                 │                     │      (CelerSMS Fork)    │
+│ │ (Headless)  │ │ (Swing GUI) │ │                 │                     └────────────┬────────────┘
+│ └─────────────┘ └─────────────┘ │                 ▼                                  │
+└─────────────────────────────────┘          socat PTY-TCP Bridge                      ▼
+                                         (socat ... tcp:127.0.0.1:2001)       Server Telemetry Console
+                                                                              ([RX], [FSM], [LATENCY], [TX])
 ```
 
 ---
@@ -109,14 +110,21 @@ The objective of this platform is to emulate the complete lifecycle of a physica
   * Interfaces with the virtual serial port `/tmp/ttyB` via `jSerialComm`.
   * Semi-blocking I/O mode (`TIMEOUT_READ_SEMI_BLOCKING`) with 100 ms cadence and prompt token matching (`OK`, `ERROR`, `>`).
   * Automatic buffer flush on initialization to prevent stale character accumulation.
+  * Pre-connection file descriptor validation with descriptive diagnostics for missing PTY bridges.
 * **Automated Client Application (`ClientApp`)**:
   * End-to-end execution of the 21-command evaluation protocol.
   * Validates boot rejection, SIM unlock, network registration waiting, USSD balance query, incoming SMS vote processing, and outgoing confirmation SMS.
+* **Graphical Operator Dashboard (`ModemGuiApp`)**:
+  * Interactive operator dashboard built with Java Swing and non-blocking asynchronous worker threads (`ExecutorService`).
+  * Real-time telemetry indicators: Network Registration LED, Operator identification, CSQ signal strength bar with dBm mapping, and USSD live balance.
+  * One-click telecom operations: SIM unlock, network status verification, balance inquiry, and 3GPP-standard bulk SIM memory clearing (`AT+CMGD=1,4`).
+  * Dynamic SMS slot index extraction from unsolicited result codes (`+CMTI: "SM",<index>`) preventing memory index mismatch errors.
+  * Full duplex AT command/response console with millisecond latency measurement and custom command input.
 * **Structured Telemetry Pipeline (`TelemetryCollector`)**:
   * Collects command execution latencies, command count, and error rates.
   * Serializes structured metrics into `telemetry.json` upon completion for automated grading.
 * **Architecture Decision Records (ADRs)**:
-  * Formal engineering records preserved under [`docs/adr/`](docs/adr/README.md).
+  * Formal engineering records preserved under [`docs/adr/`](docs/adr/README.md) (ADR-001 through ADR-008).
 
 ### Server-Side Telemetry & Observability
 * Diagnostic logger running on the server console (`System.out`) providing structured logs with millisecond timestamps:

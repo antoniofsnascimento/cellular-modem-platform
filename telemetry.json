@@ -1,8 +1,8 @@
 {
-  "sessionStart": "2026-11-04T17:55:31.376263Z",
+  "sessionStart": "2026-11-04T19:18:32.339632Z",
   "totalCommands": 21,
-  "avgLatencyMs": 125.00,
-  "maxLatencyMs": 1261,
+  "avgLatencyMs": 95.67,
+  "maxLatencyMs": 604,
   "errorRate": 0.0000,
   "currentBalance": 5.40,
   "votingResults": {
@@ -12,107 +12,107 @@
   "log": [
     {
       "cmd": "AT",
-      "latencyMs": 77,
+      "latencyMs": 57,
       "success": true
     },
     {
       "cmd": "ATI",
-      "latencyMs": 28,
+      "latencyMs": 40,
       "success": true
     },
     {
       "cmd": "AT+CPIN?",
-      "latencyMs": 30,
+      "latencyMs": 23,
       "success": true
     },
     {
       "cmd": "AT+CPIN=0000",
+      "latencyMs": 46,
+      "success": true
+    },
+    {
+      "cmd": "AT+CREG?",
       "latencyMs": 33,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 31,
+      "latencyMs": 33,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 31,
+      "latencyMs": 30,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 52,
+      "latencyMs": 34,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 53,
+      "latencyMs": 39,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 38,
+      "latencyMs": 29,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 40,
-      "success": true
-    },
-    {
-      "cmd": "AT+CREG?",
-      "latencyMs": 38,
+      "latencyMs": 43,
       "success": true
     },
     {
       "cmd": "AT+COPS?",
-      "latencyMs": 44,
+      "latencyMs": 35,
       "success": true
     },
     {
       "cmd": "AT+CSQ",
-      "latencyMs": 12,
+      "latencyMs": 13,
       "success": true
     },
     {
       "cmd": "AT+CMGF=1",
-      "latencyMs": 45,
+      "latencyMs": 49,
       "success": true
     },
     {
       "cmd": "AT+CSCA?",
-      "latencyMs": 38,
+      "latencyMs": 39,
       "success": true
     },
     {
       "cmd": "AT+CUSD=1,\"*#100#\",15",
-      "latencyMs": 1261,
+      "latencyMs": 567,
       "success": true
     },
     {
       "cmd": "AT+INJECT=\"+351912345678\",\"OPCAO_A\"",
-      "latencyMs": 5,
+      "latencyMs": 6,
       "success": true
     },
     {
       "cmd": "AT+CMGL=\"ALL\"",
-      "latencyMs": 120,
+      "latencyMs": 132,
       "success": true
     },
     {
       "cmd": "AT+CMGR=1",
-      "latencyMs": 75,
+      "latencyMs": 79,
       "success": true
     },
     {
       "cmd": "AT+CMGD=1",
-      "latencyMs": 55,
+      "latencyMs": 78,
       "success": true
     },
     {
       "cmd": "AT+CMGS=+351912345678",
-      "latencyMs": 519,
+      "latencyMs": 604,
       "success": true
     }
   ]
