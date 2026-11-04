@@ -90,6 +90,34 @@ The objective of this platform is to emulate the complete lifecycle of a physica
     OK
     ```
 
+### Week 6 — High-Level Features & Resilient Extensions
+* **High-Level Feature 1: SMS Voting Center (`VotingService`)**:
+  * Decoupled Value-Added Service (VAS) handling inbound SMS voting.
+  * Anti-fraud validation: strictly enforces one vote per unique phone number.
+  * Live candidate tally aggregation and result breakdown export.
+* **High-Level Feature 2: USSD Balance Monitor (`UssdService`)**:
+  * Automated USSD query parsing (`*#100#`) using regular expressions.
+  * Real-time balance threshold alerting (notifies when balance drops below 2.00 EUR).
+* **Extension: Fault-Tolerant Transmission (`RetryPolicy`)**:
+  * Resilient message dispatch using exponential backoff ($T = \text{base} \times 2^k$) and randomized jitter ($\pm 100\text{ ms}$).
+  * Automatic retry on transient radio drops or modem transmission timeouts.
+* **SIM Card Capacity Protection (`AT+CMGD=1`)**:
+  * Proactive memory cleanup after processing each incoming vote, eliminating risk of SIM memory exhaustion (`+CMS ERROR: 322`).
+
+### Week 7 — Client Application, Telemetry Pipeline & Checkpoint
+* **Client Driver Architecture (`SerialModemDriver`)**:
+  * Interfaces with the virtual serial port `/tmp/ttyB` via `jSerialComm`.
+  * Semi-blocking I/O mode (`TIMEOUT_READ_SEMI_BLOCKING`) with 100 ms cadence and prompt token matching (`OK`, `ERROR`, `>`).
+  * Automatic buffer flush on initialization to prevent stale character accumulation.
+* **Automated Client Application (`ClientApp`)**:
+  * End-to-end execution of the 21-command evaluation protocol.
+  * Validates boot rejection, SIM unlock, network registration waiting, USSD balance query, incoming SMS vote processing, and outgoing confirmation SMS.
+* **Structured Telemetry Pipeline (`TelemetryCollector`)**:
+  * Collects command execution latencies, command count, and error rates.
+  * Serializes structured metrics into `telemetry.json` upon completion for automated grading.
+* **Architecture Decision Records (ADRs)**:
+  * Formal engineering records preserved under [`docs/adr/`](docs/adr/README.md).
+
 ### Server-Side Telemetry & Observability
 * Diagnostic logger running on the server console (`System.out`) providing structured logs with millisecond timestamps:
   * `[RX]`: Incoming raw command and current FSM state.
@@ -106,6 +134,7 @@ The objective of this platform is to emulate the complete lifecycle of a physica
 * **Build System**: Apache Maven 3.9+.
 * **Serial Communications**: `jSerialComm` 2.11.0.
 * **Transport Bridge**: `socat` / Netcat (`nc`).
+* **Architecture Documentation**: ADRs ([`docs/adr/`](docs/adr/README.md)).
 
 ---
 
@@ -139,6 +168,13 @@ In one terminal, spawn the virtual serial bridge:
 socat pty,raw,echo=0,link=/tmp/ttyB tcp:127.0.0.1:2001
 ```
 The client application or serial terminal connects directly to `/tmp/ttyB`.
+
+#### Option C: Automated Client Test Suite (`ClientApp`)
+In another terminal, run the full autonomous client application over `/tmp/ttyB`:
+```bash
+java -cp "target/classes:$(mvn dependency:build-classpath | grep -A1 'Dependencies classpath:' | tail -1)" com.celer.client.ClientApp /tmp/ttyB
+```
+This runs the full 21-command test suite, validates boot, unlocks the SIM, queries network status, tests USSD balance inquiry, processes SMS votes via the VAS layer with anti-fraud duplicate checks, tests resilient SMS dispatch with exponential backoff, and exports `telemetry.json`.
 
 ---
 
