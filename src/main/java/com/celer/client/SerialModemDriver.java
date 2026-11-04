@@ -117,4 +117,8 @@ public final class SerialModemDriver implements AutoCloseable {
             serialPort.closePort();
         }
     }
+
+    public boolean isOpen() {
+        return serialPort != null && serialPort.isOpen();
+    }
 }

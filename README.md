@@ -176,6 +176,13 @@ java -cp "target/classes:$(mvn dependency:build-classpath | grep -A1 'Dependenci
 ```
 This runs the full 21-command test suite, validates boot, unlocks the SIM, queries network status, tests USSD balance inquiry, processes SMS votes via the VAS layer with anti-fraud duplicate checks, tests resilient SMS dispatch with exponential backoff, and exports `telemetry.json`.
 
+#### Option D: Graphical Operator Dashboard (`ModemGuiApp`)
+Launch the interactive graphical dashboard (GUI) over `/tmp/ttyB`:
+```bash
+java -cp "target/classes:$(mvn dependency:build-classpath | grep -A1 'Dependencies classpath:' | tail -1)" com.celer.client.ModemGuiApp /tmp/ttyB
+```
+Provides visual network registration indicators, CSQ signal strength bar (with -dBm calculation), quick action buttons (PIN unlock, network check, USSD query, SIM memory cleanup), live SMS voting injector with anti-fraud detection, and an integrated real-time AT traffic console.
+
 ---
 
 ## 5. Verification & Test Plan Session
