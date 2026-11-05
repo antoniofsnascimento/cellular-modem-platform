@@ -1,8 +1,8 @@
 {
-  "sessionStart": "2026-11-04T19:18:32.339632Z",
+  "sessionStart": "2026-11-05T12:52:00.204952Z",
   "totalCommands": 21,
-  "avgLatencyMs": 95.67,
-  "maxLatencyMs": 604,
+  "avgLatencyMs": 126.10,
+  "maxLatencyMs": 1476,
   "errorRate": 0.0000,
   "currentBalance": 5.40,
   "votingResults": {
@@ -12,107 +12,128 @@
   "log": [
     {
       "cmd": "AT",
-      "latencyMs": 57,
+      "comment": "UART autobauding sync & baseband processor readiness verification",
+      "latencyMs": 82,
       "success": true
     },
     {
       "cmd": "ATI",
-      "latencyMs": 40,
-      "success": true
-    },
-    {
-      "cmd": "AT+CPIN?",
-      "latencyMs": 23,
-      "success": true
-    },
-    {
-      "cmd": "AT+CPIN=0000",
-      "latencyMs": 46,
-      "success": true
-    },
-    {
-      "cmd": "AT+CREG?",
-      "latencyMs": 33,
-      "success": true
-    },
-    {
-      "cmd": "AT+CREG?",
-      "latencyMs": 33,
-      "success": true
-    },
-    {
-      "cmd": "AT+CREG?",
+      "comment": "Query baseband firmware version and modem hardware identity",
       "latencyMs": 30,
       "success": true
     },
     {
-      "cmd": "AT+CREG?",
-      "latencyMs": 34,
+      "cmd": "AT+CPIN?",
+      "comment": "Poll ISO 7816 SIM card physical presence and PIN lock status",
+      "latencyMs": 30,
+      "success": true
+    },
+    {
+      "cmd": "AT+CPIN=0000",
+      "comment": "Authenticate SIM PIN, release IMSI and power up RF transceiver",
+      "latencyMs": 40,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 39,
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 50,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 29,
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 54,
       "success": true
     },
     {
       "cmd": "AT+CREG?",
-      "latencyMs": 43,
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 51,
+      "success": true
+    },
+    {
+      "cmd": "AT+CREG?",
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 51,
+      "success": true
+    },
+    {
+      "cmd": "AT+CREG?",
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 45,
+      "success": true
+    },
+    {
+      "cmd": "AT+CREG?",
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 50,
+      "success": true
+    },
+    {
+      "cmd": "AT+CREG?",
+      "comment": "Poll network registration state (BCCH cell scanning vs attached)",
+      "latencyMs": 45,
       "success": true
     },
     {
       "cmd": "AT+COPS?",
-      "latencyMs": 35,
+      "comment": "Query serving cell operator PLMN name and Radio Access Technology",
+      "latencyMs": 38,
       "success": true
     },
     {
       "cmd": "AT+CSQ",
+      "comment": "Measure antenna Received Signal Strength (RSSI) in dBm and BER",
       "latencyMs": 13,
       "success": true
     },
     {
       "cmd": "AT+CMGF=1",
-      "latencyMs": 49,
+      "comment": "Configure SMS framing protocol mode (Text mode vs raw PDU)",
+      "latencyMs": 44,
       "success": true
     },
     {
       "cmd": "AT+CSCA?",
-      "latencyMs": 39,
+      "comment": "Query SMSC gateway routing address stored in SIM EF_SMSP file",
+      "latencyMs": 53,
       "success": true
     },
     {
       "cmd": "AT+CUSD=1,\"*#100#\",15",
-      "latencyMs": 567,
+      "comment": "Open high-priority USSD signaling session with core network HLR/HSS",
+      "latencyMs": 1476,
       "success": true
     },
     {
       "cmd": "AT+INJECT=\"+351912345678\",\"OPCAO_A\"",
-      "latencyMs": 6,
+      "comment": "Simulate downlink radio burst arriving from cell tower into SIM memory",
+      "latencyMs": 8,
       "success": true
     },
     {
       "cmd": "AT+CMGL=\"ALL\"",
-      "latencyMs": 132,
+      "comment": "List message slots allocated in SIM EEPROM storage memory (SM)",
+      "latencyMs": 68,
       "success": true
     },
     {
       "cmd": "AT+CMGR=1",
-      "latencyMs": 79,
+      "comment": "Read message payload from SIM slot and toggle status to REC READ",
+      "latencyMs": 47,
       "success": true
     },
     {
       "cmd": "AT+CMGD=1",
-      "latencyMs": 78,
+      "comment": "Erase message from SIM EEPROM to prevent capacity exhaustion (+CMS ERROR: 322)",
+      "latencyMs": 46,
       "success": true
     },
     {
       "cmd": "AT+CMGS=+351912345678",
-      "latencyMs": 604,
+      "comment": "Transmit SMS frame via uplink dedicated signaling channel to SMSC",
+      "latencyMs": 327,
       "success": true
     }
   ]

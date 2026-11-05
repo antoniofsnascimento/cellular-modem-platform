@@ -71,6 +71,7 @@ public final class TelemetryCollector {
             CommandResult r = records.get(i);
             json.append("    {\n");
             json.append(String.format("      \"cmd\": \"%s\",\n", r.command().replace("\"", "\\\"")));
+            json.append(String.format("      \"comment\": \"%s\",\n", getHardwareComment(r.command())));
             json.append(String.format("      \"latencyMs\": %d,\n", r.latencyMs()));
             json.append(String.format("      \"success\": %b\n", r.success()));
             json.append("    }").append(i == records.size() - 1 ? "\n" : ",\n");
@@ -80,5 +81,44 @@ public final class TelemetryCollector {
         try (FileWriter writer = new FileWriter(filePath, StandardCharsets.UTF_8)) {
             writer.write(json.toString());
         }
+    }
+
+    private static String getHardwareComment(String command) {
+        if (command == null) return "Generic Hayes AT modem operation";
+        String upper = command.trim().toUpperCase();
+        if (upper.equals("AT")) {
+            return "UART autobauding sync & baseband processor readiness verification";
+        } else if (upper.equals("ATI")) {
+            return "Query baseband firmware version and modem hardware identity";
+        } else if (upper.startsWith("AT+CPIN?")) {
+            return "Poll ISO 7816 SIM card physical presence and PIN lock status";
+        } else if (upper.startsWith("AT+CPIN=")) {
+            return "Authenticate SIM PIN, release IMSI and power up RF transceiver";
+        } else if (upper.startsWith("AT+CREG?")) {
+            return "Poll network registration state (BCCH cell scanning vs attached)";
+        } else if (upper.startsWith("AT+COPS?")) {
+            return "Query serving cell operator PLMN name and Radio Access Technology";
+        } else if (upper.startsWith("AT+CSQ")) {
+            return "Measure antenna Received Signal Strength (RSSI) in dBm and BER";
+        } else if (upper.startsWith("AT+CMGF=")) {
+            return "Configure SMS framing protocol mode (Text mode vs raw PDU)";
+        } else if (upper.startsWith("AT+CSCA?")) {
+            return "Query SMSC gateway routing address stored in SIM EF_SMSP file";
+        } else if (upper.startsWith("AT+CSCA=")) {
+            return "Update SMSC gateway routing address in SIM card memory";
+        } else if (upper.startsWith("AT+CUSD=")) {
+            return "Open high-priority USSD signaling session with core network HLR/HSS";
+        } else if (upper.startsWith("AT+INJECT=")) {
+            return "Simulate downlink radio burst arriving from cell tower into SIM memory";
+        } else if (upper.startsWith("AT+CMGL")) {
+            return "List message slots allocated in SIM EEPROM storage memory (SM)";
+        } else if (upper.startsWith("AT+CMGR=")) {
+            return "Read message payload from SIM slot and toggle status to REC READ";
+        } else if (upper.startsWith("AT+CMGD=")) {
+            return "Erase message from SIM EEPROM to prevent capacity exhaustion (+CMS ERROR: 322)";
+        } else if (upper.startsWith("AT+CMGS")) {
+            return "Transmit SMS frame via uplink dedicated signaling channel to SMSC";
+        }
+        return "Standard 3GPP cellular modem command execution";
     }
 }
